@@ -6,6 +6,7 @@ services:
     environment:
       - PROMETHEUS_WEB_USERNAME=${PROMETHEUS_WEB_USERNAME}
       - PROMETHEUS_WEB_PASSWORD_HASH=${PROMETHEUS_WEB_PASSWORD_HASH}
+      - PROMETHEUS_WEB_PASSWORD=${PROMETHEUS_WEB_PASSWORD}
     volumes:
       - prometheus_data:/prometheus
     restart: unless-stopped

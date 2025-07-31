@@ -4,28 +4,51 @@ import (
 	"fmt"
 	"log"
 	"os"
-	// Remove this import if godotenv is no longer needed anywhere else
-	// "github.com/joho/godotenv"
 )
 
 func main() {
 
-	username := os.Getenv("PROMETHEUS_WEB_USERNAME")
+	// Get environment variables for web.yml
+	webUsername := os.Getenv("PROMETHEUS_WEB_USERNAME")
 	passwordHash := os.Getenv("PROMETHEUS_WEB_PASSWORD_HASH")
 
-	// This check is good and should remain, but it now relies solely on OS environment variables
-	if username == "" || passwordHash == "" {
-		log.Fatal("❌ Missing PROMETHEUS_WEB_USERNAME or PROMETHEUS_WEB_PASSWORD_HASH in environment variables.")
+	// Get environment variables for prometheus.yml basic auth
+	prometheusUsername := os.Getenv("PROMETHEUS_WEB_USERNAME") // Assuming the same username
+	prometheusPassword := os.Getenv("PROMETHEUS_WEB_PASSWORD")
+
+	// Check for required environment variables
+	if webUsername == "" || passwordHash == "" || prometheusPassword == "" {
+		log.Fatal("❌ Missing PROMETHEUS_WEB_USERNAME, PROMETHEUS_WEB_PASSWORD_HASH, or PROMETHEUS_WEB_PASSWORD in environment variables.")
 	}
 
-	// Build web.yml content
-	webYML := fmt.Sprintf("basic_auth_users:\n  %s: %s\n", username, passwordHash)
+	// --- web.yml generation ---
+	webYML := fmt.Sprintf("basic_auth_users:\n  %s: %s\n", webUsername, passwordHash)
 
-	outputPath := "/etc/prometheus/web.yml" // <--- Corrected output path for web.yml
-	err := os.WriteFile(outputPath, []byte(webYML), 0644)
+	webOutputPath := "/etc/prometheus/web.yml"
+	err := os.WriteFile(webOutputPath, []byte(webYML), 0644)
 	if err != nil {
-		log.Fatalf("❌ Failed to write %s: %v", outputPath, err)
+		log.Fatalf("❌ Failed to write %s: %v", webOutputPath, err)
 	}
+	fmt.Printf("✅ %s generated successfully.\n", webOutputPath)
 
-	fmt.Printf("✅ %s generated successfully.\n", outputPath)
+	// --- prometheus.yml generation ---
+	prometheusYML := fmt.Sprintf(`global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    basic_auth:
+      username: '%s'
+      password: '%s'
+    static_configs:
+      - targets: ['localhost:9091']
+`, prometheusUsername, prometheusPassword)
+
+	prometheusOutputPath := "/etc/prometheus/prometheus.yml"
+	err = os.WriteFile(prometheusOutputPath, []byte(prometheusYML), 0644)
+	if err != nil {
+		log.Fatalf("❌ Failed to write %s: %v", prometheusOutputPath, err)
+	}
+	fmt.Printf("✅ %s generated successfully.\n", prometheusOutputPath)
 }
