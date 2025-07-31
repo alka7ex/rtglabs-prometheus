@@ -1,0 +1,30 @@
+
+version: '3.8'
+
+services:
+  prometheus:
+    build: .
+    ports:
+      - "9091:9091"
+    environment:
+      - PROMETHEUS_WEB_USERNAME=${PROMETHEUS_WEB_USERNAME}
+      - PROMETHEUS_WEB_PASSWORD_HASH=${PROMETHEUS_WEB_PASSWORD_HASH}
+    volumes:
+      - prometheus_data:/prometheus
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prometheus.rule=Host(`prom.rtglabs.net`)"
+      - "traefik.http.routers.prometheus.entrypoints=https"
+      - "traefik.http.routers.prometheus.tls=true"
+      - "traefik.http.services.prometheus.loadbalancer.server.port=9091"
+    networks:
+      - coolify
+
+volumes:
+  prometheus_data:
+
+networks:
+  coolify:
+    external: true
+
